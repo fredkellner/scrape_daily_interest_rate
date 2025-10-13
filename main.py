@@ -1,6 +1,9 @@
+import os
 import requests
 
 from bs4 import BeautifulSoup
+
+bucket_name = os.getenv("BUCKET_NAME")
 
 month_dict = {
     "January": "01",
@@ -22,19 +25,19 @@ soup = BeautifulSoup(response.text, 'html.parser')
 
 span = soup.find('span', attrs={'data-sheets-root': '1'})
 date = span.text.strip()
-date_str = date[date.find(',') +2:]
-
-
+date_str = date[date.find(',') +2 : ]
 
 month, day_year = date_str.split(" ", 1)
 day = day_year.split(",")[0].zfill(2)  
 year = day_year.split(",")[1].strip() 
-
-# Build ISO-style date string
 formatted_date = f"{year}-{month_dict[month]}-{day}"
 
 after_text = span.next_sibling.strip()
 start_find = after_text.find('the national average 30-year fixed mortgage APR is')
 end_find = after_text.find('%', start_find + 50)
 mortgate_rate = after_text[start_find + 50 :end_find]
-mortgate_rate
+
+
+
+mortgage_rate_df = pd.DataFrame({"date": [formatted_date], 'rate': [mortgate_rate})
+mortgage_rate_df.to_csv(f"gs://{bucket_name}/mortgage_rates.csv", storage_options={"token": None})
