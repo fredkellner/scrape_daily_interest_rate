@@ -2,6 +2,7 @@ import os
 import requests
 
 from bs4 import BeautifulSoup
+import pandas as pd
 
 bucket_name = os.getenv("BUCKET_NAME")
 
