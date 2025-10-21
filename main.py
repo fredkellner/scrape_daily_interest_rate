@@ -42,4 +42,4 @@ mortgage_rate_df = pd.DataFrame({"date": [formatted_date], 'rate': [mortgate_rat
 existing_rates_df = pd.read_csv(f"gs://{bucket_name}/mortgage_rates.csv")
 final_mortgage_rate_df = pd.concat([existing_rates_df, mortgage_rate_df])
                                     
-final_mortgage_rate_df.to_csv(f"gs://{bucket_name}/mortgage_rates.csv", , index=False, storage_options={"token": None})
+final_mortgage_rate_df.to_csv(f"gs://{bucket_name}/mortgage_rates.csv",  index=False, storage_options={"token": None})
