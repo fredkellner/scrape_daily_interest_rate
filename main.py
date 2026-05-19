@@ -5,7 +5,10 @@ import logging
 import requests
 
 from bs4 import BeautifulSoup
+from flask import Flask
 import pandas as pd
+
+app = Flask(__name__)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger(__name__)
@@ -136,28 +139,36 @@ def parse_rate(soup: BeautifulSoup, page_text: str) -> str:
     raise ValueError("Could not extract 30-year fixed rate from page.")
 
 
-def main():
-    log.info("Fetching %s", URL)
-    html = fetch_page(URL)
-    soup = BeautifulSoup(html, "html.parser")
-    page_text = soup.get_text(" ", strip=True)
+@app.route("/")
+def handle_request():
+    try:
+        log.info("Fetching %s", URL)
+        html = fetch_page(URL)
+        soup = BeautifulSoup(html, "html.parser")
+        page_text = soup.get_text(" ", strip=True)
 
-    formatted_date = parse_date(soup, page_text)
-    mortgage_rate = parse_rate(soup, page_text)
+        formatted_date = parse_date(soup, page_text)
+        mortgage_rate = parse_rate(soup, page_text)
 
-    log.info("Date: %s  Rate: %s%%", formatted_date, mortgage_rate)
+        log.info("Date: %s  Rate: %s%%", formatted_date, mortgage_rate)
 
-    mortgage_rate_df = pd.DataFrame({"date": [formatted_date], "rate": [mortgage_rate]})
-    existing_rates_df = pd.read_csv(f"gs://{bucket_name}/mortgage_rates.csv")
-    final_df = pd.concat([existing_rates_df, mortgage_rate_df])
-    final_df.drop_duplicates(["date"], inplace=True)
-    final_df.to_csv(
-        f"gs://{bucket_name}/mortgage_rates.csv",
-        index=False,
-        storage_options={"token": None},
-    )
-    log.info("CSV updated successfully.")
+        mortgage_rate_df = pd.DataFrame({"date": [formatted_date], "rate": [mortgage_rate]})
+        existing_rates_df = pd.read_csv(f"gs://{bucket_name}/mortgage_rates.csv")
+        final_df = pd.concat([existing_rates_df, mortgage_rate_df])
+        final_df.drop_duplicates(["date"], inplace=True)
+        final_df.to_csv(
+            f"gs://{bucket_name}/mortgage_rates.csv",
+            index=False,
+            storage_options={"token": None},
+        )
+        log.info("CSV updated successfully.")
+        return {"status": "ok", "date": formatted_date, "rate": mortgage_rate}, 200
+
+    except Exception as exc:
+        log.exception("Scrape failed: %s", exc)
+        return {"status": "error", "message": str(exc)}, 500
 
 
 if __name__ == "__main__":
-    main()
+    port = int(os.getenv("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
