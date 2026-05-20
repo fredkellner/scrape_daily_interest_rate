@@ -139,7 +139,7 @@ def parse_rate(soup: BeautifulSoup, page_text: str) -> str:
     raise ValueError("Could not extract 30-year fixed rate from page.")
 
 
-@app.route("/")
+@app.route("/", methods=["GET", "POST"])
 def handle_request():
     try:
         log.info("Fetching %s", URL)
